@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "ai-ark": {
+      "command": "npx",
+      "args": ["-y", "@aiark/mcp-server"],
+      "env": {
+        "AI_ARK_TOKEN": "${AI_ARK_TOKEN}"
+      },
+      "description": "AI Ark people-search MCP server. Set AI_ARK_TOKEN in your environment before starting. Exposes the same people_search tool the pipeline uses via HTTP API, so you can run ad-hoc queries directly from Claude Code or Cursor without touching pipeline code."
+    }
+  }
+}

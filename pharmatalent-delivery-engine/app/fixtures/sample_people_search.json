@@ -1,0 +1,18 @@
+[
+  {
+    "full_name": "Dr. Anna Müller",
+    "title": "Head of Talent Acquisition",
+    "linkedin_url": "https://www.linkedin.com/in/anna-mueller-talent/",
+    "location": "Zurich, Switzerland",
+    "about": "Experienced talent acquisition leader in biotech and pharma. 10+ years placing scientific talent across DACH region.",
+    "company": "Molecular Partners AG"
+  },
+  {
+    "full_name": "James O'Brien",
+    "title": "VP People & Culture",
+    "linkedin_url": "https://www.linkedin.com/in/james-obrien-people/",
+    "location": "Dublin, Ireland",
+    "about": "Building high-performing scientific teams in clinical-stage biotech. Former Amgen, now driving people strategy at Anavex Europe.",
+    "company": "Anavex Life Sciences"
+  }
+]

@@ -1,0 +1,2 @@
+# Output artifacts are generated at runtime and not committed to the repo.
+# run_summary.json and active_client_hiring.csv appear here after a run.
