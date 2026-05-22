@@ -58,7 +58,9 @@ def run_hm_validation_stage(
         # Get associated jobs for this company
         candidate = candidate_map.get(norm_company_name)
         jobs: list[JobRecord] = candidate.jobs if candidate else []
-        job_ids = [str(j.id) for j in jobs]
+        # Fetch real DB IDs by linkedin_id — in-memory UUIDs on existing
+        # (skipped) jobs won't match what's stored in Supabase
+        job_ids = _resolve_job_ids(jobs)
 
         for person in people:
             contact, job_id_list = _validate_person(
@@ -154,3 +156,29 @@ def _validate_person(
     )
 
     return contact, job_ids
+
+
+def _resolve_job_ids(jobs: list) -> list[str]:
+    """
+    Look up the real Supabase-stored UUIDs for a list of jobs by their
+    linkedin_id. This avoids the mismatch where existing (already-scraped)
+    jobs have a freshly-generated in-memory UUID that doesn't match the DB.
+    """
+    if not jobs:
+        return []
+    from app.db.supabase_client import get_supabase_client
+    client = get_supabase_client()
+    linkedin_ids = [j.linkedin_id for j in jobs if j.linkedin_id]
+    if not linkedin_ids:
+        return []
+    try:
+        result = (
+            client.table("jobs")
+            .select("id, linkedin_id")
+            .in_("linkedin_id", linkedin_ids)
+            .execute()
+        )
+        return [row["id"] for row in (result.data or [])]
+    except Exception:
+        # Fallback to in-memory IDs — better than failing entirely
+        return [str(j.id) for j in jobs]

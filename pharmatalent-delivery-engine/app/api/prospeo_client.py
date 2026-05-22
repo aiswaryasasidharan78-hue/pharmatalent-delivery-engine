@@ -1,12 +1,14 @@
 """
-Prospeo.io HTTP API client.
+Prospeo.io HTTP API client — POST /search-person
 
-Free tier: 100 credits, 25 people per credit → ~2,500 people available.
-We still cap at max_results=2 at the pipeline level (LLM validation budget).
+Correct filter keys (from Prospeo docs):
+  person_job_title   — { "include": ["VP People", ...] }
+  company            — { "include": ["Immatics"] }   <-- NOT company_name/company_website
 
-Used as:
-  - Alternative primary (if PEOPLE_SEARCH_PROVIDER=prospeo)
-  - Fallback (if PEOPLE_SEARCH_PROVIDER=both and AI Ark returns nothing)
+Previous wrong attempts:
+  company_website    — 400 (wrong key)
+  company_name       — 400 (wrong key, whether string or object)
+  {"include": [...]} — 400 (company_name doesn't exist at all)
 """
 from __future__ import annotations
 
@@ -57,50 +59,120 @@ class ProspeoClient:
         location: str | None = None,
     ) -> list[dict[str, Any]]:
         """
-        Search for people at a company.  Returns at most max_results people.
-        Prospeo's /linkedin-search or /company-search endpoint.
+        Search for decision-makers using POST /search-person.
+
+        Correct Prospeo filter keys:
+          "company"          -> { "include": ["CompanyName"] }
+          "person_job_title" -> { "include": ["VP People", ...] }
         """
-        # Prospeo's search: POST /linkedin-search with job_title + company
-        results: list[dict] = []
-        for title in titles[: 3]:  # try top 3 titles max
-            payload: dict[str, Any] = {
-                "job_title": title,
-                "company": company_domain or company_name,
-                "limit": self._max_results,
+        filters: dict[str, Any] = {
+            "person_job_title": {
+                "include": titles[:5]
+            },
+            "company": {
+                "include": [company_name]
             }
-            if location:
-                payload["location"] = location
+        }
 
-            logger.info(
-                "prospeo_people_search",
-                stage="dmm",
-                company=company_name,
-                title=title,
-                location=location,
-            )
+        filters: dict[str, Any] = {
+            "person_job_title": {
+            "include": titles[:5]
+        },
+        "company": {
+            "include": [company_name]
+        },
+        "person_location_search": {
+            "include": [
+                "Germany", "Switzerland", "Netherlands", "Belgium",
+                "Denmark", "Sweden", "Ireland", "France",
+                "United Kingdom", "Spain", "Italy", "Austria",
+                "Finland", "Norway"
+            ]
+        }
+}
 
+        payload: dict[str, Any] = {
+            "page": 1,
+            "filters": filters,
+        }
+
+        logger.info(
+            "prospeo_people_search",
+            stage="dmm",
+            company=company_name,
+            titles=titles[:3],
+            location=location,
+            endpoint="/search-person",
+            filters_sent={"company": company_name, "titles": titles[:2]},
+        )
+
+        try:
             with httpx.Client(timeout=30.0) as client:
                 resp = client.post(
-                    f"{_BASE_URL}/linkedin-search",
+                    f"{_BASE_URL}/search-person",
                     headers=self._headers(),
                     json=payload,
                 )
+
                 if resp.status_code in {401, 403}:
-                    logger.error("prospeo_auth_error", status=resp.status_code)
+                    logger.error(
+                        "prospeo_auth_error",
+                        stage="dmm",
+                        status=resp.status_code,
+                        body=resp.text[:300],
+                    )
                     resp.raise_for_status()
+
+                # Log raw response always — critical for debugging
+                logger.info(
+                    "prospeo_raw_response",
+                    stage="dmm",
+                    company=company_name,
+                    status=resp.status_code,
+                    body_preview=resp.text[:400],
+                )
+
                 resp.raise_for_status()
 
             data = resp.json()
-            people = data.get("response", data.get("results", []))
-            results.extend(people)
-            if len(results) >= self._max_results:
-                break
 
-        results = results[: self._max_results]
+            if data.get("error"):
+                logger.warning(
+                    "prospeo_api_error_response",
+                    stage="dmm",
+                    company=company_name,
+                    error_code=data.get("error_code"),
+                    filter_error=data.get("filter_error", data.get("message", "unknown")),
+                )
+                return []
+
+            # Response: {"error": false, "results": [{"person": {...}, "company": {...}}, ...]}
+            raw_results = data.get("results", [])
+            people = [item.get("person", item) for item in raw_results]
+            people = people[: self._max_results]
+
+        except httpx.HTTPStatusError as e:
+            logger.warning(
+                "prospeo_http_error",
+                stage="dmm",
+                company=company_name,
+                status=e.response.status_code,
+                body=e.response.text[:400],
+            )
+            return []
+        except Exception as e:
+            logger.warning(
+                "prospeo_request_failed",
+                stage="dmm",
+                company=company_name,
+                error=str(e),
+            )
+            return []
+
         logger.info(
             "prospeo_people_search_done",
             stage="dmm",
             company=company_name,
-            returned=len(results),
+            returned=len(people),
         )
-        return results
+        return people

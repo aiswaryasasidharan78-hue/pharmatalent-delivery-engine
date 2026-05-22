@@ -69,6 +69,12 @@ def run_dmm_stage(
             )
             continue
 
+        active_providers = _providers(ai_ark, prospeo, cfg.people_search_provider)
+        if not active_providers:
+            logger.error("dmm_no_provider_configured", stage="dmm", company=company.raw_name, provider_setting=cfg.people_search_provider, ai_ark_token_set=bool(cfg.ai_ark_token), prospeo_key_set=bool(cfg.prospeo_api_key))
+            continue
+        logger.info("dmm_using_providers", stage="dmm", company=company.raw_name, providers=[p for p, _ in active_providers], size_band=company.size_band)
+
         people = _cascade_search(
             company=company,
             titles=titles,
@@ -246,12 +252,21 @@ def _normalize_person(
     cascade_level: str,
     company: CompanyRecord,
 ) -> CandidatePerson:
+    raw_location = raw.get("location") or raw.get("city")
+    if isinstance(raw_location, dict):
+        city = raw_location.get("city") or ""
+        country = raw_location.get("country") or ""
+        location_str: str | None = ", ".join(p for p in [city, country] if p) or None
+    else:
+        location_str = str(raw_location) if raw_location else None
+
     return CandidatePerson(
-        full_name=raw.get("full_name") or raw.get("name") or raw.get("firstName", "") + " " + raw.get("lastName", ""),
-        title=raw.get("title") or raw.get("job_title") or raw.get("jobTitle"),
-        linkedin_url=raw.get("linkedin_url") or raw.get("linkedinUrl") or raw.get("linkedin"),
-        location=raw.get("location") or raw.get("city"),
-        about_snippet=raw.get("about") or raw.get("summary") or raw.get("headline"),
+        full_name=(raw.get("full_name") or raw.get("name") or
+                   (raw.get("first_name", "") + " " + raw.get("last_name", "")).strip() or "Unknown"),
+        title=raw.get("current_job_title") or raw.get("title") or raw.get("job_title"),
+        linkedin_url=raw.get("linkedin_url") or raw.get("linkedinUrl"),
+        location=location_str,
+        about_snippet=raw.get("headline") or raw.get("about") or raw.get("summary"),
         company_name=company.raw_name,
         company_domain=company.domain,
         provider=provider,  # type: ignore[arg-type]

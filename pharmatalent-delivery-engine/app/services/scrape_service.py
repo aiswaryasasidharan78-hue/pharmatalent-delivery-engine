@@ -74,7 +74,9 @@ def run_scrape_stage(summary: RunSummary) -> list[JobRecord]:
 
 def _normalize_job(item: dict[str, Any], run_id: str) -> JobRecord:
     org_url = item.get("organization_url") or item.get("companyUrl") or ""
-    domain = extract_domain_from_url(org_url)
+    raw_domain = extract_domain_from_url(org_url)
+    _USELESS_DOMAINS = {"linkedin.com", "twitter.com", "facebook.com"}
+    domain = raw_domain if raw_domain and raw_domain not in _USELESS_DOMAINS else None
     employee_count = item.get("linkedin_org_employees") or item.get("organizationEmployees")
     size_text = item.get("linkedin_org_size") or item.get("organizationSize")
 

@@ -15,6 +15,9 @@ from contextvars import ContextVar
 from typing import Any
 
 import structlog
+import logging
+
+logging.basicConfig(level=logging.INFO)
 
 # Context variable so run_id propagates across async tasks automatically
 _run_id_var: ContextVar[str] = ContextVar("run_id", default="")
@@ -54,7 +57,7 @@ def configure_logging(level: str = "INFO") -> None:
             getattr(logging, level.upper(), logging.INFO)
         ),
         context_class=dict,
-        logger_factory=structlog.PrintLoggerFactory(file=sys.stdout),
+        logger_factory=structlog.stdlib.LoggerFactory(),
         cache_logger_on_first_use=True,
     )
 
