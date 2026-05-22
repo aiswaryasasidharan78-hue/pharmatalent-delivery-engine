@@ -211,3 +211,5 @@ claude --mcp-config mcp.json
 ```
 
 The pipeline itself uses the HTTP API directly (headless, credential-swappable). The MCP config is an additional exploration layer on top.
+
+<!-- Pipeline verified: end-to-end run completed, 7 contacts validated in Supabase -->
