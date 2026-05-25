@@ -1,0 +1,18 @@
+{
+  "run_id": "f928b20a-8747-41c7-b449-b232c03175a2",
+  "started_at": "2026-05-25T04:46:52.769311",
+  "finished_at": "2026-05-25T04:48:00.269154",
+  "jobs_scraped": 10,
+  "jobs_persisted": 10,
+  "companies_found": 6,
+  "companies_excluded_active_client": 0,
+  "companies_icp_fit": 2,
+  "companies_icp_not_fit": 4,
+  "contacts_candidates": 4,
+  "contacts_validated": 1,
+  "contacts_dropped": 3,
+  "dmm_cache_hits": 0,
+  "dmm_api_calls": 2,
+  "errors": [],
+  "active_client_hiring_signals": 0
+}

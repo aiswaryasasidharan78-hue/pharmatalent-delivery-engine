@@ -132,9 +132,9 @@ pipeline_runs ──────────────────────
 | ICP fit-check | `perplexity/sonar` | Web-enabled — browses real company websites. Cheaper than sonar-pro; sufficient for binary + confidence classification. |
 | HM validation | `deepseek/deepseek-chat` | Cheap classification task (~$0.0014/1K tokens). All facts are in the prompt — no web access needed. ~50× cheaper than GPT-4o for this task. |
 
-Both use `temperature=0` for deterministic, auditable outputs. See `docs/adr-002-model-strategy.md`.
+**Prompt divergence:** The starter fixture (`app/fixtures/sample_hm_validation_prompt.md`) follows the spec's conservative rules — Talent/HR leaders only qualify unconditionally for small companies, and functional heads outrank them for senior roles. The live prompt (`app/prompts/hm_validation_prompt.py`) deliberately relaxes this after observing that Prospeo returns mostly Talent/HR leaders across all company sizes, and the conservative rule was dropping every valid contact. This calibration is intentional and documented here per the spec's suggestion to "document why your version is better in the README."
 
-> **Prompt divergence:** The starter fixture (`app/fixtures/sample_hm_validation_prompt.md`) follows the spec's conservative rules — HR/Talent leaders only qualify unconditionally for small companies. The live prompt (`app/prompts/hm_validation_prompt.py`) relaxes this after observing that Prospeo returns mostly Talent/HR leaders and the conservative rule was dropping all valid contacts. This is a deliberate calibration choice documented here.
+Both use `temperature=0` for deterministic, auditable outputs. See `docs/adr-002-model-strategy.md`.
 
 ---
 
@@ -183,6 +183,7 @@ When an active client is spotted hiring, a row is written to `output/active_clie
 - **No parallel async scraping** — the Apify actor is synchronous and fast enough.
 - **ICP size pre-filter not applied at scrape time** — deliberate: applying `organizationEmployeesGte/Lte` at scrape time would hide active-client signals (Pfizer, Bayer). We filter after exclusion instead.
 - **No checkpoint resume mid-run** — the pipeline is fast enough that a full rerun is cheaper than managing checkpoint state. Idempotency covers reruns gracefully.
+- **Prospeo `/search-person` endpoint** required several iterations to get right — the correct filter keys are `company: {include: [...]}` and `person_job_title: {include: [...]}`. Previous attempts at `/linkedin-search` and `/company-search` were wrong endpoints. This is documented in `app/api/prospeo_client.py`.
 
 **With another day:** async concurrency for the ICP stage (5–10× faster), a Makefile target for scheduled `cron`/GitHub Actions runs, and a Grafana dashboard wired to the `pipeline_runs` table.
 

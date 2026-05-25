@@ -27,7 +27,6 @@ htmlcov/
 .tox/
 
 # Output artifacts (committed selectively)
-output/run_summary.json
 output/active_client_hiring.csv
 output/icp_fit_decisions.csv
 
