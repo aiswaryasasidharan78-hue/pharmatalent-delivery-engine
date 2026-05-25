@@ -266,7 +266,7 @@ def _normalize_person(
         title=raw.get("current_job_title") or raw.get("title") or raw.get("job_title"),
         linkedin_url=raw.get("linkedin_url") or raw.get("linkedinUrl"),
         location=location_str,
-        about_snippet=raw.get("headline") or raw.get("about") or raw.get("summary"),
+        about_snippet=raw.get("about_snippet") or raw.get("headline") or raw.get("about") or raw.get("summary"),
         company_name=company.raw_name,
         company_domain=company.domain,
         provider=provider,  # type: ignore[arg-type]
