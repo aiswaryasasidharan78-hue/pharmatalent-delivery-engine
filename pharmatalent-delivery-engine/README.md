@@ -134,6 +134,8 @@ pipeline_runs ──────────────────────
 
 Both use `temperature=0` for deterministic, auditable outputs. See `docs/adr-002-model-strategy.md`.
 
+> **Prompt divergence:** The starter fixture (`app/fixtures/sample_hm_validation_prompt.md`) follows the spec's conservative rules — HR/Talent leaders only qualify unconditionally for small companies. The live prompt (`app/prompts/hm_validation_prompt.py`) relaxes this after observing that Prospeo returns mostly Talent/HR leaders and the conservative rule was dropping all valid contacts. This is a deliberate calibration choice documented here.
+
 ---
 
 ## Idempotency and reruns
